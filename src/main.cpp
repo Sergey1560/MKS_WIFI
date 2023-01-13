@@ -288,17 +288,17 @@ void query_printer_inf(){
 		if((gPrinterInf.print_state == PRINTER_PRINTING) || (gPrinterInf.print_state == PRINTER_PAUSE)){
 			if(millis() - last_query_temp_time > 5000){ //every 5 seconds
 				if(GET_VERSION_OK)
-					package_gcode((char *)"M27\nM992\nM994\nM991\nM997\n", false);
+					package_gcode((char *)"M31\nM27\nM994\nM991\nM997\n\n", false);
 				else
-					package_gcode((char *)"M27\nM992\nM994\nM991\nM997\nM115\n", false);
+					package_gcode((char *)"M31\nM27\nM994\nM991\nM997\nM115\n", false);
 				last_query_temp_time = millis();
 			}
 		}else{
 			if(millis() - last_query_temp_time > 5000){ //every 5 seconds
 				if(GET_VERSION_OK)
-					package_gcode((char *)"M991\nM27\nM997\n", false);
+					package_gcode((char *)"M997\nM991\n", false);
 				else
-					package_gcode((char *)"M991\nM27\nM997\nM115\n", false);
+					package_gcode((char *)"M997\nM991\n", false);
 				last_query_temp_time = millis();
 			}
 			
@@ -791,7 +791,7 @@ int package_gcode(char *dataField, boolean important){
 		uart_send_package[UART_PROTCL_DATALEN_OFFSET + buffer_offset + 1] = dataLen >> 8;
 		
 		strncpy(&uart_send_package[UART_PROTCL_DATA_OFFSET + buffer_offset], dataField, dataLen);
-		
+
 		uart_send_package[dataLen + buffer_offset + 4] = UART_PROTCL_TAIL;
 
 		uart_send_size = dataLen + 5;
@@ -1391,23 +1391,27 @@ static void transfer_msg_handle(uint8_t * msg, uint16_t msgLen)
 				continue;
 		}*/
 
+		// net_print((const uint8_t *) "debug: ", strlen("debug: "));
+		// net_print((uint8_t *)cmd_line, strlen(cmd_line));
+		// net_print((uint8_t *)"\n", 1);
 		/*handle the cmd*/
 		paser_cmd((uint8_t *)cmd_line);
 		do_transfer();
 		yield();
-		
-		if((cmd_line[0] == 'T') && (cmd_line[1] == ':'))
+		if(
+			((cmd_line[0] == 'T') && (cmd_line[1] == ':')) || 
+			((cmd_line[1] == 'T') && (cmd_line[2] == ':') && (cmd_line[0] == ' '))
+			)
 		{		
 			String tempVal((const char *)cmd_line);
 			int index = tempVal.indexOf("B:", 0);
 			if(index != -1)			
 			{
 				memset(dbgStr, 0, sizeof(dbgStr));
-				sprintf((char *)dbgStr, "T:%d /%d B:%d /%d T0:%d /%d T1:%d /%d @:0 B@:0\r\n", 
-					(int)gPrinterInf.curSprayerTemp[0], (int)gPrinterInf.desireSprayerTemp[0], (int)gPrinterInf.curBedTemp, (int)gPrinterInf.desireBedTemp,
-					(int)gPrinterInf.curSprayerTemp[0], (int)gPrinterInf.desireSprayerTemp[0], (int)gPrinterInf.curSprayerTemp[1], (int)gPrinterInf.desireSprayerTemp[1]);
+				sprintf((char *)dbgStr, "T:%.2f /%.2f B:%.2f /%.2f T0:%.2f /%.2f T1:%.2f /%.2f @:0 B@:0\r\n", 
+					gPrinterInf.curSprayerTemp[0], gPrinterInf.desireSprayerTemp[0], gPrinterInf.curBedTemp, gPrinterInf.desireBedTemp,
+					gPrinterInf.curSprayerTemp[0], gPrinterInf.desireSprayerTemp[0], gPrinterInf.curSprayerTemp[1], gPrinterInf.desireSprayerTemp[1]);
 				net_print((const uint8_t*)dbgStr, strlen((const char *)dbgStr));
-					
 			}
 			continue;
 		}

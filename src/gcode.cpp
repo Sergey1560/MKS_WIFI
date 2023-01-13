@@ -176,6 +176,47 @@ void paser_cmd(uint8_t *cmdRxBuf){
 		gPrinterInf.print_file_inf.print_seconds = line.toInt();		
 		
 		return;
+	}else if(line.startsWith("Not SD printing")){
+		gPrinterInf.print_file_inf.print_rate = 0;
+		return;
+	}else if(line.startsWith("SD printing byte ")){
+		line = line.substring(17);
+		int index = line.indexOf('/');
+		if(index == -1)
+		   return;
+		double part = line.substring(0,index).toDouble();
+		double full = line.substring(index+1).toDouble();
+		gPrinterInf.print_file_inf.print_rate=full;
+		double rate = part / full;
+		rate = rate * 100;
+		gPrinterInf.print_file_inf.print_rate = (int)round(rate);
+		return;
+	}else if(line.startsWith("echo:Print time:")){
+		line = line.substring(16);
+		line.trim();
+		int index = line.indexOf('h');
+		if(index > 0){
+			gPrinterInf.print_file_inf.print_hours = line.substring(0, index).toInt();
+			line=line.substring(index + 1);
+			line.trim();
+		}else{
+			gPrinterInf.print_file_inf.print_hours = 0;
+		}
+		index = line.indexOf('m');
+		if(index > 0){
+			gPrinterInf.print_file_inf.print_mins = line.substring(0, index).toInt();
+			line=line.substring(index + 1);
+			line.trim();
+		}else{
+			gPrinterInf.print_file_inf.print_mins = 0;
+		}
+		index = line.indexOf('s');
+		if(index > 0){
+			gPrinterInf.print_file_inf.print_seconds = line.substring(0, index).toInt();
+		}else{
+			gPrinterInf.print_file_inf.print_seconds = 0;
+		}		
+		return;
 	}else if(line.startsWith("M27 ")){
 		line = line.substring(4);
 		gPrinterInf.print_file_inf.print_rate = line.toInt();
